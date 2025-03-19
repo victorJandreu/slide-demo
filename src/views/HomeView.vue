@@ -6,9 +6,10 @@
           v-for="(imgD, index) in data"
           :key="imgD.id"
           :ref="(el) => setCardRef(el, `card${imgD.id}`)"
-          @mousedown="(e) => index === 0 && startMoveCard(e, `card${imgD.id}`)"
+          @mousedown="(e) => index === 0 && startMoveCard(e, `card${imgD.id}`, imgD.id)"
           class="card"
           :class="{ grabbed: isGrab }"
+          :style="index !== 0 && { zIndex: 100 - index }"
         >
           <div
             class="card-imag"
@@ -29,7 +30,7 @@
 
 <script setup>
 import imgData from '../stores/imgData.json'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 //referencias card
 const actualidRef = ref('')
@@ -46,29 +47,26 @@ const data = ref(imgData)
 const translateNumber = ref(0)
 const rotationValue = ref(0)
 const clientXMove = ref(null)
+const actuailId = ref('')
+
 //estilos imagen
 const position = ref('')
 const porcentaje = ref(0)
 
 //Mounted
 onMounted(() => {
-  document.addEventListener('mouseup', () => {
-    isGrab.value = false
-    translateNumber.value = 0
-    rotationValue.value = 0
-    clientXMove.value = null
-    position.value = ''
-    porcentaje.value = 0
-    cardRefs.value[actualidRef.value].style.transition = 'transform 0.5s ease-out'
-    cardRefs.value[actualidRef.value].style.transform =
-      `translateX(${translateNumber.value}px) rotate(${rotationValue.value}deg)`
-  })
+  document.addEventListener('mouseup', leaveCard)
   document.addEventListener('mousemove', mouveCard)
 })
+onUnmounted(() => {
+  document.removeEventListener('mouseup', leaveCard)
+  document.removeEventListener('mousemove', mouveCard)
+})
 
-const startMoveCard = (e, ref) => {
+const startMoveCard = (e, ref, id) => {
   clientXMove.value = e.clientX
   actualidRef.value = ref
+  actuailId.value = id
   isGrab.value = true
   cardRefs.value[actualidRef.value].style.transition = ''
 }
@@ -76,10 +74,11 @@ const startMoveCard = (e, ref) => {
 const mouveCard = (e) => {
   if (!isGrab.value) return
 
-  if (e.clientX > clientXMove.value) {
+  if (e.clientX > clientXMove.value && translateNumber.value < 240) {
     translateNumber.value += 4
     rotationValue.value += 1
-  } else {
+  }
+  if (e.clientX < clientXMove.value && translateNumber.value > -240) {
     translateNumber.value -= 4
     rotationValue.value -= 1
   }
@@ -90,6 +89,27 @@ const mouveCard = (e) => {
 
   cardRefs.value[actualidRef.value].style.transform =
     `translateX(${translateNumber.value}px) rotate(${rotationValue.value}deg)`
+}
+
+const leaveCard = () => {
+  isGrab.value = false
+  let isFinishCard = false
+  if (Math.abs(translateNumber.value) > 140) {
+    //quitamos la carta
+
+    data.value = data.value.filter((item) => item.id !== actuailId.value)
+    isFinishCard = true
+  }
+  translateNumber.value = 0
+  rotationValue.value = 0
+  clientXMove.value = null
+  position.value = ''
+  porcentaje.value = 0
+  if (!isFinishCard) {
+    cardRefs.value[actualidRef.value].style.transition = 'transform 0.5s ease-out'
+    cardRefs.value[actualidRef.value].style.transform =
+      `translateX(${translateNumber.value}px) rotate(${rotationValue.value}deg)`
+  }
 }
 </script>
 
@@ -107,7 +127,7 @@ const mouveCard = (e) => {
   width: 100vw;
   display: flex;
   justify-content: center;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .card-container {
@@ -126,8 +146,12 @@ const mouveCard = (e) => {
     user-select: none;
 
     img {
-      width: 270px;
-      height: 100%;
+      display: block;
+      width: 70vw;
+      height: 80vh;
+      max-width: 250px;
+      max-height: 400px;
+
       object-fit: cover;
       user-select: none;
       pointer-events: none;
@@ -145,15 +169,11 @@ const mouveCard = (e) => {
     pointer-events: none;
   }
 
-  .img-container .grabbed {
+  .grabbed {
     cursor: grabbing !important;
   }
   .card:first-child {
-    order: 0;
-  }
-
-  .card:nth-child(n + 2) {
-    order: -1;
+    z-index: 99999;
   }
 }
 </style>
