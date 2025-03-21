@@ -191,11 +191,12 @@ const disapearEffect = () => {
 
 <style scoped lang="scss">
 .container {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
-  min-height: 100vh;
+  height: 100dvh; /* Usa dvh en vez de vh */
+  overflow: hidden;
   background: linear-gradient(to bottom, #302929, #1a1a1a, #333333);
 }
 
