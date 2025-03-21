@@ -1,7 +1,8 @@
 <template>
   <div class="container">
     <div class="overlay">
-      <div class="card-container">
+      <VueSpinner v-show="isLoading" size="40" color="cadetblue" />
+      <div v-show="!isLoading" class="card-container">
         <div
           v-for="(imgD, index) in data"
           :key="imgD.id"
@@ -20,7 +21,12 @@
               }
             "
           >
-            <img v-if="index === 0 || index === 1" :src="imgD.image" alt="imagen" />
+            <img
+              @load="onImageLoad(index)"
+              v-if="index === 0 || index === 1"
+              :src="imgD.image"
+              alt="imagen"
+            />
             <img
               v-if="index === 0 && translateNumber > 0"
               class="icon"
@@ -50,7 +56,7 @@
 <script setup>
 import imgData from '../stores/imgData.json'
 import { ref, onMounted, onUnmounted } from 'vue'
-
+import { VueSpinner } from 'vue3-spinners'
 //referencias card
 const actualidRef = ref('')
 const cardRefs = ref({})
@@ -73,6 +79,7 @@ const actuailId = ref('')
 const position = ref('')
 const porcentaje = ref(0)
 const iconOpacity = ref(0)
+const isLoading = ref(true)
 
 //Mounted
 onMounted(() => {
@@ -87,6 +94,12 @@ onUnmounted(() => {
   document.removeEventListener('touchend', leaveCard)
   document.removeEventListener('touchmove', mouveCard)
 })
+
+const onImageLoad = (index) => {
+  if (index === 1) {
+    isLoading.value = false
+  }
+}
 
 const startMoveCard = (e, ref, id) => {
   isTouch.value = e.type === 'touchstart' ? true : false
@@ -181,7 +194,7 @@ const disapearEffect = () => {
   align-items: center;
   height: 100%;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #cf3939, #1a1a1a, #333333);
+  background: linear-gradient(to bottom, #302929, #1a1a1a, #333333);
 }
 
 .overlay {
