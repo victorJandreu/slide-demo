@@ -80,6 +80,7 @@ const position = ref('')
 const porcentaje = ref(0)
 const iconOpacity = ref(0)
 const isLoading = ref(true)
+const countLoadImg = ref(0)
 
 //Mounted
 onMounted(() => {
@@ -95,8 +96,9 @@ onUnmounted(() => {
   document.removeEventListener('touchmove', mouveCard)
 })
 
-const onImageLoad = (index) => {
-  if (index === 1) {
+const onImageLoad = () => {
+  countLoadImg.value++
+  if (countLoadImg.value === 2) {
     isLoading.value = false
   }
 }
