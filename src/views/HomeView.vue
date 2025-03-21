@@ -20,7 +20,7 @@
               }
             "
           >
-            <img :src="imgD.image" alt="imagen" />
+            <img v-if="index === 0 || index === 1" :src="imgD.image" alt="imagen" />
             <img
               v-if="index === 0 && translateNumber > 0"
               class="icon"
@@ -101,6 +101,8 @@ const startMoveCard = (e, ref, id) => {
 const mouveCard = (e) => {
   if (!isGrab.value) return
 
+  e.preventDefault()
+
   const moveClientX = isTouch.value ? e.touches[0].clientX : e.clientX
 
   if (moveClientX > clientXMove.value && translateNumber.value < 240) {
@@ -133,7 +135,7 @@ const leaveCard = () => {
       clearValuesData()
       data.value = data.value.filter((item) => item.id !== actuailId.value)
       isFinishCard = true
-    }, 200)
+    }, 100)
   }
 
   if (!isFinishCard) {
@@ -179,7 +181,7 @@ const disapearEffect = () => {
   align-items: center;
   height: 100%;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #000000, #1a1a1a, #333333);
+  background: linear-gradient(to bottom, #cf3939, #1a1a1a, #333333);
 }
 
 .overlay {
