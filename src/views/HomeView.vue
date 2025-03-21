@@ -7,12 +7,12 @@
           :key="imgD.id"
           :ref="(el) => setCardRef(el, `card${imgD.id}`)"
           @mousedown="(e) => index === 0 && startMoveCard(e, `card${imgD.id}`, imgD.id)"
+          @touchstart.passive="(e) => index === 0 && startMoveCard(e, `card${imgD.id}`, imgD.id)"
           class="card"
           :class="{ grabbed: isGrab }"
           :style="index !== 0 && { zIndex: 100 - index }"
         >
           <div
-            class="card-imag"
             :style="
               index === 0 &&
               isGrab && {
@@ -21,6 +21,25 @@
             "
           >
             <img :src="imgD.image" alt="imagen" />
+            <img
+              v-if="index === 0 && translateNumber > 0"
+              class="icon"
+              :style="{ opacity: iconOpacity }"
+              src="../../public/heart.svg"
+              alt="heart"
+            />
+            <img
+              v-if="index === 0 && translateNumber < 0"
+              class="icon"
+              :style="{ opacity: iconOpacity }"
+              src="../../public/cancel.svg"
+              alt="not choosed"
+            />
+          </div>
+        </div>
+        <div v-if="data.length <= 1" class="card">
+          <div class="paraggraf-container">
+            <p>Oops! No more people for today. Come back tomorrow</p>
           </div>
         </div>
       </div>
@@ -43,6 +62,7 @@ const setCardRef = (el, id) => {
 
 //imagenes - data
 const isGrab = ref(false)
+const isTouch = ref(false)
 const data = ref(imgData)
 const translateNumber = ref(0)
 const rotationValue = ref(0)
@@ -52,19 +72,26 @@ const actuailId = ref('')
 //estilos imagen
 const position = ref('')
 const porcentaje = ref(0)
+const iconOpacity = ref(0)
 
 //Mounted
 onMounted(() => {
   document.addEventListener('mouseup', leaveCard)
   document.addEventListener('mousemove', mouveCard)
+  document.addEventListener('touchend', leaveCard)
+  document.addEventListener('touchmove', mouveCard)
 })
 onUnmounted(() => {
   document.removeEventListener('mouseup', leaveCard)
   document.removeEventListener('mousemove', mouveCard)
+  document.removeEventListener('touchend', leaveCard)
+  document.removeEventListener('touchmove', mouveCard)
 })
 
 const startMoveCard = (e, ref, id) => {
-  clientXMove.value = e.clientX
+  isTouch.value = e.type === 'touchstart' ? true : false
+
+  clientXMove.value = isTouch.value ? e.touches[0].clientX : e.clientX
   actualidRef.value = ref
   actuailId.value = id
   isGrab.value = true
@@ -74,16 +101,20 @@ const startMoveCard = (e, ref, id) => {
 const mouveCard = (e) => {
   if (!isGrab.value) return
 
-  if (e.clientX > clientXMove.value && translateNumber.value < 240) {
+  const moveClientX = isTouch.value ? e.touches[0].clientX : e.clientX
+
+  if (moveClientX > clientXMove.value && translateNumber.value < 240) {
     translateNumber.value += 4
     rotationValue.value += 1
   }
-  if (e.clientX < clientXMove.value && translateNumber.value > -240) {
+  if (moveClientX < clientXMove.value && translateNumber.value > -240) {
     translateNumber.value -= 4
     rotationValue.value -= 1
   }
 
-  clientXMove.value = e.clientX
+  iconOpacity.value = Math.abs(translateNumber.value) / 95
+
+  clientXMove.value = moveClientX
   position.value = translateNumber.value < 0 ? 'right' : 'left'
   porcentaje.value = Math.abs(translateNumber.value / 3)
 
@@ -94,22 +125,50 @@ const mouveCard = (e) => {
 const leaveCard = () => {
   isGrab.value = false
   let isFinishCard = false
-  if (Math.abs(translateNumber.value) > 140) {
-    //quitamos la carta
 
-    data.value = data.value.filter((item) => item.id !== actuailId.value)
-    isFinishCard = true
+  if (Math.abs(translateNumber.value) > 95) {
+    //leave the card
+    disapearEffect()
+    setTimeout(() => {
+      clearValuesData()
+      data.value = data.value.filter((item) => item.id !== actuailId.value)
+      isFinishCard = true
+    }, 200)
   }
+
+  if (!isFinishCard) {
+    //return the card
+    clearValuesData()
+    cardRefs.value[actualidRef.value].style.transition = 'transform  0.5s ease-out'
+    cardRefs.value[actualidRef.value].style.transform = `translateX(${translateNumber.value}px) `
+  }
+}
+const clearValuesData = () => {
   translateNumber.value = 0
   rotationValue.value = 0
   clientXMove.value = null
   position.value = ''
   porcentaje.value = 0
-  if (!isFinishCard) {
-    cardRefs.value[actualidRef.value].style.transition = 'transform 0.5s ease-out'
-    cardRefs.value[actualidRef.value].style.transform =
-      `translateX(${translateNumber.value}px) rotate(${rotationValue.value}deg)`
-  }
+  iconOpacity.value = 0
+}
+
+const disapearEffect = () => {
+  const card = cardRefs.value[actualidRef.value]
+  const traslateData = translateNumber.value
+  const rotateData = rotationValue.value
+
+  if (!card) return
+
+  requestAnimationFrame(() => {
+    const translateRotate =
+      traslateData > 0
+        ? { translate: translateNumber.value + 450 }
+        : { translate: translateNumber.value - 450 }
+
+    card.style.transition = 'transform .5s ease-out, opacity .3s ease-out'
+    card.style.transform = `translateX(${translateRotate.translate}px) rotate(${rotateData}deg)`
+    card.style.opacity = '0'
+  })
 }
 </script>
 
@@ -144,36 +203,59 @@ const leaveCard = () => {
     grid-column: 1 /2;
     grid-row: 1 / 2;
     user-select: none;
-
-    img {
-      display: block;
-      width: 70vw;
-      height: 80vh;
-      max-width: 250px;
-      max-height: 400px;
-
-      object-fit: cover;
-      user-select: none;
-      pointer-events: none;
-      display: block;
-    }
   }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+}
+img,
+.paraggraf-container {
+  display: block;
+  width: 70vw;
+  height: 80vh;
+  max-width: 250px;
+  max-height: 400px;
 
-    pointer-events: none;
-  }
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+  display: block;
+}
 
-  .grabbed {
-    cursor: grabbing !important;
+.paraggraf-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  p {
+    text-align: center;
+    margin: 0;
+    line-height: 1.3;
+    color: rgba(255, 245, 226, 0.823);
+    margin: 10px;
   }
-  .card:first-child {
-    z-index: 99999;
-  }
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  pointer-events: none;
+}
+
+.grabbed {
+  cursor: grabbing !important;
+}
+.card:first-child {
+  z-index: 99999;
+}
+
+.icon {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 70px;
 }
 </style>
