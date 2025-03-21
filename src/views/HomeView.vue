@@ -1,7 +1,10 @@
 <template>
   <div class="container">
     <div class="overlay">
-      <VueSpinner v-show="isLoading" size="40" color="cadetblue" />
+      <div v-show="isLoading" class="container-spinner">
+        <VueSpinner size="40" color="cadetblue" />
+      </div>
+
       <div v-show="!isLoading" class="card-container">
         <div
           v-for="(imgD, index) in data"
@@ -116,8 +119,6 @@ const startMoveCard = (e, ref, id) => {
 const mouveCard = (e) => {
   if (!isGrab.value) return
 
-  e.preventDefault()
-
   const moveClientX = isTouch.value ? e.touches[0].clientX : e.clientX
 
   if (moveClientX > clientXMove.value && translateNumber.value < 240) {
@@ -187,6 +188,20 @@ const disapearEffect = () => {
     card.style.opacity = '0'
   })
 }
+
+const heigthForMobile = () => {
+  document.documentElement.style.setProperty('--altura-real', `${window.innerHeight}px`)
+}
+
+onMounted(() => {
+  heigthForMobile()
+
+  window.addEventListener('resize', heigthForMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', heigthForMobile)
+})
 </script>
 
 <style scoped lang="scss">
@@ -195,7 +210,7 @@ const disapearEffect = () => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100dvh; /* Usa dvh en vez de vh */
+  height: var(--altura-real, 100vh);
   overflow: hidden;
   background: linear-gradient(to bottom, #302929, #1a1a1a, #333333);
 }
@@ -224,17 +239,22 @@ const disapearEffect = () => {
   }
 }
 img,
-.paraggraf-container {
+.paraggraf-container,
+.container-spinner {
   display: block;
   width: 70vw;
   height: 80vh;
   max-width: 250px;
   max-height: 400px;
-
   object-fit: cover;
   user-select: none;
   pointer-events: none;
   display: block;
+}
+
+.container-spinner {
+  display: flex;
+  justify-content: center;
 }
 
 .paraggraf-container {
